@@ -1,0 +1,12 @@
+---
+import XElement from 'astro-xelement'
+
+const {as,...attrs}=XElement
+---
+<XElement @is={as} 
+	@do={()=>{
+	console.log('hey dude')
+	}}
+    {...attrs}
+>Welcome Pukima!
+</XElement>
