@@ -2,6 +2,8 @@
 import {Manager} from 'astro-stylesheet'
 import XElement from 'astro-xelement';
 const {Div, Img, HOverlay} = XElement;
+
+const {imagesPerRow, imageColumns, folder} = Astro.props;
 ---
 <html>
  
@@ -18,85 +20,116 @@ const {Div, Img, HOverlay} = XElement;
 
 <Div class="wrapper" @do={(element, store) => {
 	store.controls={
-		index : 1,
+		indexX : 1,
+		indexY:0,
 		width : 0,
 		height: 0,
 		mouseX: 0,
 		mouseY: 0,
-		imgPerX : 36,
+		imgPerX : 35,
+		imgPerY:2,
 		stepX:0,
+		stepY:0,
+	};
+	let targetCount = store.controls.imgPerX * (store.controls.imgPerY + 1);
+	let currentlyLoaded = 0;
+	for(let i = 0; i <= store.controls.imgPerY; i++){
+		for(let j = 1; j <= store.controls.imgPerX ; j++){
+			let link = document.createElement('link');
+			link.rel = 'preload';
+			link.as = 'image';
+			link.href = `assets/3d/cube_${i}_${j < 10 ? `0${j}`: j}.png`;
+			link.addEventListener('load', (e) =>{
+				currentlyLoaded++;
+				if( currentlyLoaded >= targetCount){
+					loadingOverlay.style.display = 'none';
+				}
+				e.target.parentNode.removeChild(e.target);
+			})
+			document.head.appendChild(link);
+		}
 	}
 }}>
 	<Img id="targetImage" src="assets/3d/cube_0_01.png" class="image" />
-	<Div define:vars={{mouseStart:false, mouseDelta:0}} class="controls" @visible={(entry, store) => {
+<Div define:vars={{mouseStart:false, mouseDelta:0}} class="controls" 
+		@visible={(entry, store) => {
 		
 		store.controls.width = $.clientWidth;
 		store.controls.height = $.clientHeight;
-		store.controls.stepX = store.controls.width / store.controls.imgPerX;
-
+		store.controls.stepX = store.controls.width / (store.controls.imgPerX * 2);
+		store.controls.stepY = store.controls.height / (store.controls.imgPerY * 6 );
 
 	}} 
 	@pointerdown={(event, store) =>{ 
-		
+
 		store.controls.mouseX = event.clientX;
+		store.controls.mouseY = event.clientY;
 		mouseStart = true;
 
 	}} @mousemove={(event, store) => {
 		if(mouseStart){
-			mouseDelta = event.clientX - store.controls.mouseX;
-			if(mouseDelta > store.controls.stepX){
-				store.controls.index++;
+			mouseDeltaX = event.clientX - store.controls.mouseX;
+			mouseDeltaY = event.clientY - store.controls.mouseY;
+			if(mouseDeltaX > store.controls.stepX){
+				store.controls.indexX++;
+				if(store.controls.indexX > 35) store.controls.indexX = 1;
 				
-				store.controls.index = Math.min(Math.max(store.controls.index, 1),35);
-				targetImage.src = `assets/3d/cube_0_${store.controls.index < 10 ? '0'+store.controls.index : store.controls.index}.png`;
 				store.controls.mouseX = event.clientX;
-			} else if(mouseDelta < (store.controls.stepX * -1)){
-				store.controls.index--;
-				store.controls.index = Math.min(Math.max(store.controls.index, 1),35);
-				targetImage.src = `assets/3d/cube_0_${store.controls.index < 10 ? '0'+store.controls.index : store.controls.index}.png`;
+			} else if(mouseDeltaX < (store.controls.stepX * -1)){
+				store.controls.indexX--;
+				if(store.controls.indexX < 1) store.controls.indexX = 35;
+				targetImage.src = `assets/3d/cube_0_${store.controls.indexX < 10 ? '0'+store.controls.indexX : store.controls.indexX}.png`;
 				store.controls.mouseX = event.clientX;
 			}
 
-
-			
-			
-
+			if(mouseDeltaY > store.controls.stepY){
+				store.controls.indexY--;
+				store.controls.indexY = Math.min(Math.max(store.controls.indexY, 0), 2);
+				store.controls.mouseY = event.clientY;
+			} else if(mouseDeltaY < (store.controls.stepY * -1)){
+				store.controls.indexY++;
+				store.controls.indexY = Math.min(Math.max(store.controls.indexY, 0), 2);
+				store.controls.mouseY = event.clientY;
+			}
+			targetImage.src = `assets/3d/cube_${store.controls.indexY}_${store.controls.indexX < 10 ? '0'+store.controls.indexX : store.controls.indexX}.png`;
 		}
-		
-	}}  
-	@pointerup={(event, store) =>{
-		mouseStart = false;
-	}}
-	
-	
-	>
-		<HOverlay>
-		</HOverlay>
+	}} @pointerup={(event, store) =>{ mouseStart = false; }} @mouseout={() =>{ mouseStart = false; }}>
 	</Div>
+	<HOverlay class="loadingOverlay" id="loadingOverlay" />
 </Div>
-
 </body>
-
 </html>
 <style>
 .wrapper{
-	width: 90vw;
-	height: 90vh;
+	position: absolute;
+	width: 100vw;
+	height: 100vh;
 	background: #555;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 }
 .image{
-	background: #999;
 	width: 512px;
 	aspect-ratio: 1;
 }
 .controls{
+	top: 0;
+	left: 0;
 	width: 100%;
 	height: 100%;
 	position: absolute;
 	cursor: pointer;
+	z-index: 2;
+}
+.loadingOverlay{
+	background: rgba(0,0,0,0.8);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	z-index: 300;
 }
 </style>
 
