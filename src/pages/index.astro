@@ -1,9 +1,12 @@
 ---
-import XCard from '../components/XCard.astro';
+import {Manager} from 'astro-stylesheet'
+import XElement from 'astro-xelement';
+const {Div, Img, HOverlay} = XElement;
 ---
 <html>
  
 <head>
+<!-- <Manager sanitizer='all'/> -->
 <!-- Pull in some Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,15 +16,89 @@ import XCard from '../components/XCard.astro';
 
 <body>
 
-<XCard as='h1' class="hey"
->Welcome Pukima!
-</XCard>
+<Div class="wrapper" @do={(element, store) => {
+	store.controls={
+		index : 1,
+		width : 0,
+		height: 0,
+		mouseX: 0,
+		mouseY: 0,
+		imgPerX : 36,
+		stepX:0,
+	}
+}}>
+	<Img id="targetImage" src="assets/3d/cube_0_01.png" class="image" />
+	<Div define:vars={{mouseStart:false, mouseDelta:0}} class="controls" @visible={(entry, store) => {
+		
+		store.controls.width = $.clientWidth;
+		store.controls.height = $.clientHeight;
+		store.controls.stepX = store.controls.width / store.controls.imgPerX;
 
 
+	}} 
+	@pointerdown={(event, store) =>{ 
+		
+		store.controls.mouseX = event.clientX;
+		mouseStart = true;
 
+	}} @mousemove={(event, store) => {
+		if(mouseStart){
+			mouseDelta = event.clientX - store.controls.mouseX;
+			if(mouseDelta > store.controls.stepX){
+				store.controls.index++;
+				
+				store.controls.index = Math.min(Math.max(store.controls.index, 1),35);
+				targetImage.src = `assets/3d/cube_0_${store.controls.index < 10 ? '0'+store.controls.index : store.controls.index}.png`;
+				store.controls.mouseX = event.clientX;
+			} else if(mouseDelta < (store.controls.stepX * -1)){
+				store.controls.index--;
+				store.controls.index = Math.min(Math.max(store.controls.index, 1),35);
+				targetImage.src = `assets/3d/cube_0_${store.controls.index < 10 ? '0'+store.controls.index : store.controls.index}.png`;
+				store.controls.mouseX = event.clientX;
+			}
+
+
+			
+			
+
+		}
+		
+	}}  
+	@pointerup={(event, store) =>{
+		mouseStart = false;
+	}}
+	
+	
+	>
+		<HOverlay>
+		</HOverlay>
+	</Div>
+</Div>
+
+</body>
 
 </html>
-
+<style>
+.wrapper{
+	width: 90vw;
+	height: 90vh;
+	background: #555;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.image{
+	background: #999;
+	width: 512px;
+	aspect-ratio: 1;
+}
+.controls{
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	cursor: pointer;
+}
+</style>
 
 
 

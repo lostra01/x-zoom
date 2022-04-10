@@ -2,11 +2,11 @@
 import XElement from 'astro-xelement'
 
 const {as,...attrs}=XElement
+
+const {person} = Astro.props;
 ---
 <XElement @is={as} 
-	@do={()=>{
-	console.log('hey dude')
-	}}
     {...attrs}
->Welcome Pukima!
+>
+<slot/>
 </XElement>
